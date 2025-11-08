@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MIT Undergraduate Dorm Map</title>
+
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background: #f5f5f7;
+      color: #111827;
+      display: flex;
+      height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 320px;
+      padding: 14px;
+      background: #ffffff;
+      border-right: 1px solid #e5e7eb;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sidebar h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .sidebar p.subtitle {
+      font-size: 11px;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    .locations-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .loc-btn {
+      padding: 7px 9px;
+      border-radius: 9px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      font-size: 11px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .loc-btn strong {
+      display: block;
+      font-size: 11px;
+      margin-bottom: 1px;
+    }
+
+    .loc-btn span {
+      font-size: 10px;
+      color: #6b7280;
+    }
+
+    .loc-btn:hover {
+      background: #eef2ff;
+      border-color: #4f46e5;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(15,23,42,0.08);
+    }
+
+    .loc-btn.active {
+      background: #4f46e5;
+      color: #ffffff;
+      border-color: #4338ca;
+      box-shadow: 0 4px 12px rgba(79,70,229,0.35);
+    }
+
+    #map {
+      flex: 1;
+      position: relative;
+    }
+
+    #map-inner {
+      height: 100%;
+      width: 100%;
+    }
+
+    .info-panel {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      max-width: 260px;
+      padding: 9px 11px;
+      background: rgba(17,24,39,0.95);
+      color: #f9fafb;
+      border-radius: 14px;
+      font-size: 10px;
+      box-shadow: 0 10px 26px rgba(15,23,42,0.4);
+      backdrop-filter: blur(8px);
+    }
+
+    .info-panel h2 {
+      font-size: 12px;
+      margin-bottom: 2px;
+      font-weight: 600;
+    }
+
+    .info-panel p {
+      font-size: 10px;
+      line-height: 1.4;
+      color: #d1d5db;
+    }
+
+    @media (max-width: 800px) {
+      body {
+        flex-direction: column;
+        height: 100vh;
+      }
+      .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+        max-height: 40vh;
+      }
+      #map {
+        height: 60vh;
+      }
+      .info-panel {
+        max-width: 55%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h1>MIT Dorm Explorer</h1>
+    <p class="subtitle">Click a dorm or marker to see details.</p>
+    <div class="locations-list" id="locationsList"></div>
+  </div>
+
+  <div id="map">
+    <div id="map-inner"></div>
+    <div class="info-panel" id="infoPanel">
+      <h2>Welcome</h2>
+      <p>Select a dorm on the left or click a marker to learn more.</p>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    // Map centered roughly on MIT campus
+    const map = L.map("map-inner").setView([42.3592, -71.0930], 15.7);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors"
+    }).addTo(map);
+
+    const infoPanel = document.getElementById("infoPanel");
+    const locationsList = document.getElementById("locationsList");
+    const markersById = {};
+    const buttonsById = {};
+
+    // MIT UNDERGRAD DORMS (coords are approximate; adjust as needed)
+    const locations = [
+      {
+        id: "baker",
+        code: "W7",
+        name: "Baker House",
+        short: "Riverside dorm with strong social culture.",
+        description:
+          "Co-ed dorm on Memorial Drive known for its social community, events, and many rooms with Charles River views.",
+        lat: 42.3567,
+        lng: -71.0958,
+        zoom: 18
+      },
+      {
+        id: "burtonConner",
+        code: "W51",
+        name: "Burton-Conner",
+        short: "Suite-style dorm on the river.",
+        description:
+          "Suite-style housing with distinct floor cultures and kitchens; recently renovated with modern common spaces.",
+        lat: 42.3569,
+        lng: -71.0939,
+        zoom: 18
+      },
+      {
+        id: "maseeh",
+        code: "W1",
+        name: "Maseeh Hall",
+        short: "Large dorm at the Mass Ave bridge.",
+        description:
+          "One of the largest undergrad dorms. Central location right at the end of the Harvard Bridge, close to main campus.",
+        lat: 42.3575,
+        lng: -71.0951,
+        zoom: 18
+      },
+      {
+        id: "macgregor",
+        code: "W61",
+        name: "MacGregor House",
+        short: "Tower-style singles on the river.",
+        description:
+          "Mostly single rooms arranged in entries with shared lounges and kitchens; quiet and independent vibes with river views.",
+        lat: 42.3574,
+        lng: -71.0911,
+        zoom: 18
+      },
+      {
+        id: "newHouse",
+        code: "W70",
+        name: "New House",
+        short: "Cultural & theme communities.",
+        description:
+          "Cluster-style dorm on Memorial Drive with cultural and theme communities; mix of singles and doubles.",
+        lat: 42.3574,
+        lng: -71.0903,
+        zoom: 18
+      },
+      {
+        id: "nextHouse",
+        code: "W71",
+        name: "Next House",
+        short: "Large riverside dorm.",
+        description:
+          "West campus dorm with strong student government, active lounges, and lots of community events.",
+        lat: 42.3578,
+        lng: -71.0893,
+        zoom: 18
+      },
+      {
+        id: "simmons",
+        code: "W79",
+        name: "Simmons Hall",
+        short: "“Sponge” building on Vassar St.",
+        description:
+          "Distinctive architecture and many shared spaces. Suite-style housing with strong house culture.",
+        lat: 42.3599,
+        lng: -71.0899,
+        zoom: 18
+      },
+      {
+        id: "ec",
+        code: "62/64",
+        name: "East Campus",
+        short: "Student-driven culture & murals.",
+        description:
+          "Oldest dorm complex with strong, hall-based cultures, murals, and student-built projects; right next to main campus.",
+        lat: 42.3597,
+        lng: -71.0890,
+        zoom: 18
+      },
+      {
+        id: "mccormick",
+        code: "W4",
+        name: "McCormick Hall",
+        short: "Riverside tower with views.",
+        description:
+          "Prominent tower-style dorm on the river with shared lounges, music room, and views of the Charles and Boston.",
+        lat: 42.3577,
+        lng: -71.0927,
+        zoom: 18
+      },
+      {
+        id: "random",
+        code: "NW61",
+        name: "Random Hall",
+        short: "Small, close-knit community.",
+        description:
+          "Smaller dorm north of campus with strong tight-knit community, kitchens, and quirky culture.",
+        lat: 42.3614,
+        lng: -71.0993,
+        zoom: 18
+      },
+      {
+        id: "newVassar",
+        code: "W46",
+        name: "New Vassar",
+        short: "Modern west campus dorm.",
+        description:
+          "Newer dorm on west campus with clusters, communal kitchens, and modern common spaces; close to athletics facilities.",
+        lat: 42.3590,
+        lng: -71.0977,
+        zoom: 18
+      }
+    ];
+
+    // Create markers and sidebar buttons
+    locations.forEach((loc) => {
+      const marker = L.marker([loc.lat, loc.lng]).addTo(map);
+      marker.on("click", () => focusLocation(loc.id));
+      markersById[loc.id] = marker;
+
+      const btn = document.createElement("button");
+      btn.className = "loc-btn";
+      btn.innerHTML = `
+        <strong>${loc.code} — ${loc.name}</strong>
+        <span>${loc.short}</span>
+      `;
+      btn.onclick = () => focusLocation(loc.id);
+      locationsList.appendChild(btn);
+      buttonsById[loc.id] = btn;
+    });
+
+    function focusLocation(id) {
+      const loc = locations.find((l) => l.id === id);
+      if (!loc) return;
+
+      Object.values(buttonsById).forEach((b) => b.classList.remove("active"));
+      buttonsById[id].classList.add("active");
+
+      map.flyTo([loc.lat, loc.lng], loc.zoom || 18, { duration: 0.6 });
+
+      infoPanel.innerHTML = `
+        <h2>${loc.name}</h2>
+        <p>${loc.description}</p>
+      `;
+
+      markersById[id]
+        .bindPopup(`<b>${loc.name}</b><br>${loc.short}`)
+        .openPopup();
+    }
+  </script>
+</body>
+</html>
