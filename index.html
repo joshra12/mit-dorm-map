@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MIT Undergraduate Dorm Map</title>
+  <title>MIT Dorm & Grad Housing Map</title>
 
   <!-- Leaflet CSS -->
   <link
@@ -30,7 +30,7 @@
     }
 
     .sidebar {
-      width: 320px;
+      width: 340px;
       padding: 14px;
       background: #ffffff;
       border-right: 1px solid #e5e7eb;
@@ -108,9 +108,9 @@
       position: absolute;
       bottom: 14px;
       left: 14px;
-      max-width: 260px;
+      max-width: 280px;
       padding: 9px 11px;
-      background: rgba(17,24,39,0.95);
+      background: rgba(17,24,39,0.96);
       color: #f9fafb;
       border-radius: 14px;
       font-size: 10px;
@@ -128,6 +128,25 @@
       font-size: 10px;
       line-height: 1.4;
       color: #d1d5db;
+      margin-bottom: 6px;
+    }
+
+    .info-btn {
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: none;
+      font-size: 10px;
+      cursor: pointer;
+      background: #4f46e5;
+      color: #f9fafb;
+      box-shadow: 0 4px 10px rgba(79,70,229,0.5);
+      transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .info-btn:hover {
+      background: #4338ca;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(79,70,229,0.6);
     }
 
     @media (max-width: 800px) {
@@ -145,15 +164,17 @@
         height: 60vh;
       }
       .info-panel {
-        max-width: 55%;
+        max-width: 60%;
       }
     }
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <h1>MIT Dorm Explorer</h1>
-    <p class="subtitle">Click a dorm or marker to see details.</p>
+    <h1>MIT Housing Map</h1>
+    <p class="subtitle">
+      Click a dorm to zoom and open its Google Classroom with more information.
+    </p>
     <div class="locations-list" id="locationsList"></div>
   </div>
 
@@ -161,7 +182,7 @@
     <div id="map-inner"></div>
     <div class="info-panel" id="infoPanel">
       <h2>Welcome</h2>
-      <p>Select a dorm on the left or click a marker to learn more.</p>
+      <p>Select a residence from the list or map to open its info Classroom.</p>
     </div>
   </div>
 
@@ -173,8 +194,8 @@
   ></script>
 
   <script>
-    // Map centered roughly on MIT campus
-    const map = L.map("map-inner").setView([42.3592, -71.0930], 15.7);
+    // Map centered on MIT
+    const map = L.map("map-inner").setView([42.3592, -71.0930], 15.6);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
@@ -186,132 +207,201 @@
     const markersById = {};
     const buttonsById = {};
 
-    // MIT UNDERGRAD DORMS (coords are approximate; adjust as needed)
+    // Helper: replace these classroomUrl values with your real links.
     const locations = [
+      {
+        id: "70amherst",
+        code: "E2",
+        name: "70 Amherst St",
+        short: "Grad residence near east campus.",
+        lat: 42.3594,
+        lng: -71.0884,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgxMzA5NTYy/details"
+      },
+      {
+        id: "ashdown",
+        code: "NW35",
+        name: "Ashdown House",
+        short: "Grad residence at Albany St.",
+        lat: 42.3588,
+        lng: -71.1014,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgxMjQ3Mzc4/details"
+      },
       {
         id: "baker",
         code: "W7",
         name: "Baker House",
-        short: "Riverside dorm with strong social culture.",
-        description:
-          "Co-ed dorm on Memorial Drive known for its social community, events, and many rooms with Charles River views.",
+        short: "Undergrad dorm on Memorial Dr.",
         lat: 42.3567,
         lng: -71.0958,
-        zoom: 18
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgxMjM4NzQz/details"
       },
       {
-        id: "burtonConner",
+        id: "burtonconner",
         code: "W51",
         name: "Burton-Conner",
-        short: "Suite-style dorm on the river.",
-        description:
-          "Suite-style housing with distinct floor cultures and kitchens; recently renovated with modern common spaces.",
+        short: "Undergrad suite-style on river.",
         lat: 42.3569,
         lng: -71.0939,
-        zoom: 18
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgxMDc5MjIw/details"
       },
       {
-        id: "maseeh",
-        code: "W1",
-        name: "Maseeh Hall",
-        short: "Large dorm at the Mass Ave bridge.",
-        description:
-          "One of the largest undergrad dorms. Central location right at the end of the Harvard Bridge, close to main campus.",
-        lat: 42.3575,
-        lng: -71.0951,
-        zoom: 18
+        id: "eastcampus",
+        code: "62/64",
+        name: "East Campus",
+        short: "Undergrad dorm next to main campus.",
+        lat: 42.3597,
+        lng: -71.0890,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgxNDAyNjMw/details"
+      },
+      {
+        id: "edgerton",
+        code: "NW10",
+        name: "Edgerton House",
+        short: "Grad residence on Albany St.",
+        lat: 42.3624,
+        lng: -71.0991,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgxMTQ4MTIy/details"
       },
       {
         id: "macgregor",
         code: "W61",
         name: "MacGregor House",
-        short: "Tower-style singles on the river.",
-        description:
-          "Mostly single rooms arranged in entries with shared lounges and kitchens; quiet and independent vibes with river views.",
+        short: "Undergrad tower-style on river.",
         lat: 42.3574,
         lng: -71.0911,
-        zoom: 18
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgxMjQyMzY1/details"
       },
       {
-        id: "newHouse",
-        code: "W70",
-        name: "New House",
-        short: "Cultural & theme communities.",
-        description:
-          "Cluster-style dorm on Memorial Drive with cultural and theme communities; mix of singles and doubles.",
-        lat: 42.3574,
-        lng: -71.0903,
-        zoom: 18
-      },
-      {
-        id: "nextHouse",
-        code: "W71",
-        name: "Next House",
-        short: "Large riverside dorm.",
-        description:
-          "West campus dorm with strong student government, active lounges, and lots of community events.",
-        lat: 42.3578,
-        lng: -71.0893,
-        zoom: 18
-      },
-      {
-        id: "simmons",
-        code: "W79",
-        name: "Simmons Hall",
-        short: "“Sponge” building on Vassar St.",
-        description:
-          "Distinctive architecture and many shared spaces. Suite-style housing with strong house culture.",
-        lat: 42.3599,
-        lng: -71.0899,
-        zoom: 18
-      },
-      {
-        id: "ec",
-        code: "62/64",
-        name: "East Campus",
-        short: "Student-driven culture & murals.",
-        description:
-          "Oldest dorm complex with strong, hall-based cultures, murals, and student-built projects; right next to main campus.",
-        lat: 42.3597,
-        lng: -71.0890,
-        zoom: 18
+        id: "maseeh",
+        code: "W1",
+        name: "Maseeh Hall",
+        short: "Undergrad dorm at Mass Ave bridge.",
+        lat: 42.3575,
+        lng: -71.0951,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgwOTIwNjIy/details"
       },
       {
         id: "mccormick",
         code: "W4",
         name: "McCormick Hall",
-        short: "Riverside tower with views.",
-        description:
-          "Prominent tower-style dorm on the river with shared lounges, music room, and views of the Charles and Boston.",
-        lat: 42.3577,
-        lng: -71.0927,
-        zoom: 18
+        short: "Undergrad residence on Memorial Dr.",
+        lat: 42.3572,
+        lng: -71.0944,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgxMjc3NjYz/details"
+      },
+      {
+        id: "newhouse",
+        code: "W70",
+        name: "New House",
+        short: "Undergrad cultural & theme communities.",
+        lat: 42.3574,
+        lng: -71.0903,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/m/ODE1NzgxMjUyMDM0/details"
+      },
+      {
+        id: "newvassar",
+        code: "W46",
+        name: "New Vassar",
+        short: "Modern undergrad dorm on Vassar St.",
+        lat: 42.3590,
+        lng: -71.0977,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/m/ODE1NzgxMDg3NDc2/details"
+      },
+      {
+        id: "nexthouse",
+        code: "W71",
+        name: "Next House",
+        short: "Undergrad west campus community.",
+        lat: 42.3547,
+        lng: -71.1019,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/m/ODE1NzgwODY4Mzc4/details"
       },
       {
         id: "random",
         code: "NW61",
         name: "Random Hall",
-        short: "Small, close-knit community.",
-        description:
-          "Smaller dorm north of campus with strong tight-knit community, kitchens, and quirky culture.",
-        lat: 42.3614,
+        short: "Small, close-knit undergrad dorm.",
+        lat: 42.3607,
         lng: -71.0993,
-        zoom: 18
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/m/ODE1NzgwNDYzOTQ1/details"
       },
       {
-        id: "newVassar",
-        code: "W46",
-        name: "New Vassar",
-        short: "Modern west campus dorm.",
-        description:
-          "Newer dorm on west campus with clusters, communal kitchens, and modern common spaces; close to athletics facilities.",
-        lat: 42.3590,
-        lng: -71.0977,
-        zoom: 18
+        id: "sidneypacific",
+        code: "NW86",
+        name: "Sidney-Pacific",
+        short: "Large grad community on Pacific St.",
+        lat: 42.3597,
+        lng: -71.1022,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/m/ODE1NzgxMDQ2Njc1/details"
+      },
+      {
+        id: "simmons",
+        code: "W79",
+        name: "Simmons Hall",
+        short: "Undergrad \"sponge\" on Vassar St.",
+        lat: 42.3571,
+        lng: -71.1015,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/a/ODE1NzgxMTk4NzE1/details"
+      },
+      {
+        id: "site4",
+        code: "E37",
+        name: "Site 4 (Grad Tower)",
+        short: "Grad tower at Kendall / Hayward St.",
+        lat: 42.3622,
+        lng: -71.0881,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/m/ODE1NzgwOTA1NjQz/details"
+      },
+      {
+        id: "tang",
+        code: "W84",
+        name: "Tang Hall",
+        short: "Grad residence at west end of campus.",
+        lat: 42.3559,
+        lng: -71.1125,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/m/ODE1Nzc5OTA0Mjk0/details"
+      },
+      {
+        id: "warehouse",
+        code: "NW30",
+        name: "The Warehouse",
+        short: "Grad residence on Albany St.",
+        lat: 42.3620,
+        lng: -71.0972,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/m/ODE1NzgxMjU3NzI0/details"
+      },
+      {
+        id: "westgate",
+        code: "W85",
+        name: "Westgate Apartments",
+        short: "Grad family housing on Memorial Dr.",
+        lat: 42.3566,
+        lng: -71.1141,
+        zoom: 18,
+        classroomUrl: "https://classroom.google.com/c/ODEyNDUyODI0MDM0/m/ODE1NzgwODg3MTMw/details"
       }
     ];
 
-    // Create markers and sidebar buttons
+    // Build buttons and markers
     locations.forEach((loc) => {
       const marker = L.marker([loc.lat, loc.lng]).addTo(map);
       marker.on("click", () => focusLocation(loc.id));
@@ -320,10 +410,10 @@
       const btn = document.createElement("button");
       btn.className = "loc-btn";
       btn.innerHTML = `
-        <strong>${loc.code} — ${loc.name}</strong>
+        <strong>${loc.name}</strong>
         <span>${loc.short}</span>
       `;
-      btn.onclick = () => focusLocation(loc.id);
+      btn.addEventListener("click", () => focusLocation(loc.id));
       locationsList.appendChild(btn);
       buttonsById[loc.id] = btn;
     });
@@ -332,19 +422,35 @@
       const loc = locations.find((l) => l.id === id);
       if (!loc) return;
 
+      // Highlight active button
       Object.values(buttonsById).forEach((b) => b.classList.remove("active"));
-      buttonsById[id].classList.add("active");
+      if (buttonsById[id]) buttonsById[id].classList.add("active");
 
+      // Zoom to residence
       map.flyTo([loc.lat, loc.lng], loc.zoom || 18, { duration: 0.6 });
 
+      // Update info panel with Classroom button
       infoPanel.innerHTML = `
         <h2>${loc.name}</h2>
-        <p>${loc.description}</p>
+        <p>Click below to open the Google Classroom page with more information for ${loc.name}.</p>
+        <button class="info-btn" id="open-${loc.id}">
+          Open Google Classroom
+        </button>
       `;
 
-      markersById[id]
-        .bindPopup(`<b>${loc.name}</b><br>${loc.short}`)
-        .openPopup();
+      const openBtn = document.getElementById(`open-${loc.id}`);
+      if (openBtn && loc.classroomUrl) {
+        openBtn.addEventListener("click", () => {
+          window.open(loc.classroomUrl, "_blank", "noopener");
+        });
+      }
+
+      // Optional popup on marker
+      if (markersById[id]) {
+        markersById[id]
+          .bindPopup(`<b>${loc.name}</b><br>${loc.short}`)
+          .openPopup();
+      }
     }
   </script>
 </body>
