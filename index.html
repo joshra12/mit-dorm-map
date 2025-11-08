@@ -105,9 +105,9 @@
     }
 
     .info-panel {
-      position: absolute;
+      position: fixed;  /* instead of absolute */
       bottom: 14px;
-      left: 14px;
+      left: 360px; /* shift to appear next to sidebar */
       max-width: 280px;
       padding: 9px 11px;
       background: rgba(17,24,39,0.96);
@@ -116,8 +116,9 @@
       font-size: 10px;
       box-shadow: 0 10px 26px rgba(15,23,42,0.4);
       backdrop-filter: blur(8px);
-      z-index: 1000; /* keep panel + button above the map */
+      z-index: 9999;
     }
+
 
     .info-panel h2 {
       font-size: 12px;
@@ -181,11 +182,13 @@
 
   <div id="map">
     <div id="map-inner"></div>
-    <div class="info-panel" id="infoPanel">
-      <h2>Welcome</h2>
-      <p>Select a residence from the list or map to open its info Classroom.</p>
-    </div>
   </div>
+
+  <div class="info-panel" id="infoPanel">
+    <h2>Welcome</h2>
+    <p>Select a residence from the list or map to open its info Classroom.</p>
+  </div>
+
 
   <!-- Leaflet JS -->
   <script
